@@ -4,62 +4,8 @@ import 'package:simulasi_ukk/models/model_warna.dart';
 import 'package:simulasi_ukk/Widgets/card_produk.dart';
 import 'package:simulasi_ukk/Widgets/custom_appbar.dart';
 import 'package:simulasi_ukk/Widgets/custom_bottom_navbar.dart';
-import 'package:simulasi_ukk/services/database_service.dart';
-import 'package:simulasi_ukk/models/product_model.dart';
 
-class Produk extends StatefulWidget {
-  @override
-  _ProdukState createState() => _ProdukState();
-}
-
-class _ProdukState extends State<Produk> {
-  final DatabaseService _databaseService = DatabaseService();
-  List<ProductModel> _products = [];
-  List<ProductModel> _filteredProducts = [];
-  bool _isLoading = true;
-  String _searchQuery = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProducts();
-  }
-
-  Future<void> _loadProducts() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final products = await _databaseService.getProducts();
-      setState(() {
-        _products = products;
-        _filteredProducts = products;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to load products: $e')));
-    }
-  }
-
-  void _filterProducts(String query) {
-    setState(() {
-      _searchQuery = query;
-      if (query.isEmpty) {
-        _filteredProducts = _products;
-      } else {
-        _filteredProducts = _products.where((product) {
-          return product.name.toLowerCase().contains(query.toLowerCase());
-        }).toList();
-      }
-    });
-  }
-
+class Produk extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -80,9 +26,9 @@ class _ProdukState extends State<Produk> {
             children: [
               CustomSearchBar(
                 hintText: 'Cari Produk',
-                onChanged: _filterProducts,
               ),
               SizedBox(height: 8),
+
               // Filter Button
               Row(
                 children: [
@@ -107,6 +53,7 @@ class _ProdukState extends State<Produk> {
                       ),
                     ),
                   ),
+
                   SizedBox(width: 8),
                   //Game
                   ElevatedButton(
@@ -130,6 +77,7 @@ class _ProdukState extends State<Produk> {
                     ),
                   ),
                   SizedBox(width: 8),
+
                   //Musik
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -152,6 +100,7 @@ class _ProdukState extends State<Produk> {
                     ),
                   ),
                   SizedBox(width: 8),
+
                   //Produktif
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -176,6 +125,7 @@ class _ProdukState extends State<Produk> {
                 ],
               ),
               SizedBox(height: 8),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
@@ -219,43 +169,56 @@ class _ProdukState extends State<Produk> {
                 ],
               ),
               SizedBox(height: 8),
-              // Loading indicator or product list
-              if (_isLoading)
-                Center(child: CircularProgressIndicator())
-              else
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: _filteredProducts.length,
-                    itemBuilder: (context, index) {
-                      final product = _filteredProducts[index];
-                      return CardProduk(
-                        image: product.imageUrl ?? 'assets/fish.png',
-                        productName: product.name,
-                        price: 'IDR. ${product.price}',
-                        stock: product.stock ?? 0,
-                        onEdit: () {
-                          // Navigate to EditProduk page with product data
-                          Navigator.pushNamed(
-                            context,
-                            '/EditProduk',
-                            arguments: {
-                              'id': product.id,
-                              'name': product.name,
-                              'price': 'IDR. ${product.price}',
-                              'category': product.category,
-                              'image': product.imageUrl,
-                              'stock': product.stock,
-                            },
-                          );
-                        },
-                        onDelete: () {
-                          // Handle delete action
-                          _confirmDeleteProduct(context, product);
-                        },
-                      );
+
+              //Card untuk produk yang sudah dibuat
+              CardProduk(
+                image: 'assets/fish.png',
+                productName: 'Fish',
+                price: 'IDR. 100.000',
+                stock: 8,
+                onEdit: () {
+                  // Navigate to EditProduk page with product data
+                  Navigator.pushNamed(
+                    context,
+                    '/EditProduk',
+                    arguments: {
+                      'name': 'Fish',
+                      'price': 'IDR. 100.000',
+                      'category': 'Game',
+                      'image': 'assets/fish.png',
+                      'stock': 8,
                     },
-                  ),
-                ),
+                  );
+                },
+                onDelete: () {
+                  // Handle delete action
+                  _confirmDeleteProduct(context);
+                },
+              ),
+              SizedBox(height: 8),
+              CardProduk(
+                image: 'assets/notes.png',
+                productName: 'Book Moon',
+                price: 'IDR. 150.000',
+                stock: 12,
+                onEdit: () {
+                  // Navigate to EditProduk page with product data
+                  Navigator.pushNamed(
+                    context,
+                    '/EditProduk',
+                    arguments: {
+                      'name': 'Book Moon',
+                      'price': 'IDR. 150.000',
+                      'category': 'Musik',
+                      'image': 'assets/notes.png',
+                      'stock': 12,
+                    },
+                  );
+                },
+                onDelete: () {
+                  _confirmDeleteProduct(context);
+                },
+              ),
             ],
           ),
         ),
@@ -288,8 +251,10 @@ class _ProdukState extends State<Produk> {
         break;
     }
   }
+}
 
-  void _confirmDeleteProduct(BuildContext context, ProductModel product) {
+
+void _confirmDeleteProduct(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -322,7 +287,7 @@ class _ProdukState extends State<Produk> {
               text: 'Apakah Anda yakin ingin menghapus',
               children: [
                 TextSpan(
-                  text: ' ${product.name}',
+                  text: ' Produk(Nama Produk)',
                   style: TextStyle(
                     fontFamily: "CircularStd",
                     fontWeight: FontWeight.w400,
@@ -360,20 +325,9 @@ class _ProdukState extends State<Produk> {
                   ),
                   padding: MaterialStateProperty.all(EdgeInsets.all(12)),
                 ),
-                onPressed: () async {
+                onPressed: () {
                   Navigator.of(context).pop();
-
-                  try {
-                    await _databaseService.deleteProduct(product.id);
-                    await _loadProducts(); // Refresh the product list
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Product deleted successfully')),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to delete product: $e')),
-                    );
-                  }
+                  Navigator.of(context).pop();
                 },
                 child: Text(
                   'Hapus',
@@ -391,4 +345,3 @@ class _ProdukState extends State<Produk> {
       },
     );
   }
-}
