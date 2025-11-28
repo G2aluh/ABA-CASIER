@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
@@ -26,6 +27,7 @@ class _EditProdukState extends State<EditProduk> {
   // Controllers for form fields
   late TextEditingController _productNameController;
   late TextEditingController _priceController;
+  String _rawPriceValue = '';
 
   // Image picker
   File? _pickedImage;
@@ -42,6 +44,7 @@ class _EditProdukState extends State<EditProduk> {
 
     // Initialize controllers
     _productNameController = TextEditingController(text: widget.product.name);
+    _rawPriceValue = widget.product.price.toString();
     _priceController = TextEditingController(
       text: RupiahFormatter.format(widget.product.price),
     );
@@ -152,7 +155,7 @@ class _EditProdukState extends State<EditProduk> {
       // Create updated product model
       final updatedProduct = widget.product.copyWith(
         name: _productNameController.text,
-        price: RupiahFormatter.unformat(_priceController.text),
+        price: int.tryParse(_rawPriceValue) ?? 0,
         imageUrl: imageUrl,
         category: category,
       );
@@ -375,26 +378,62 @@ class _EditProdukState extends State<EditProduk> {
                                   top: 0,
                                   bottom: 0,
                                 ),
-                                child: TextFormField(
-                                  controller: _priceController,
-                                  keyboardType: TextInputType.number,
-                                  cursorColor: Warna().Ijo,
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w400,
-                                    fontFamily: 'CircularStd',
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: 'Masukkan Harga Produk',
-                                    hintStyle: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w400,
-                                      fontFamily: 'CircularStd',
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _priceController,
+                                        keyboardType: TextInputType.number,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                        ],
+                                        cursorColor: Warna().Ijo,
+                                        style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          fontFamily: 'CircularStd',
+                                        ),
+                                        decoration: InputDecoration(
+                                          hintText: 'Masukkan Harga Produk',
+                                          hintStyle: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w400,
+                                            fontFamily: 'CircularStd',
+                                          ),
+                                          border: InputBorder.none,
+                                        ),
+                                        onChanged: (value) {
+                                          // Store raw value for submission
+                                          _rawPriceValue = value;
+
+                                          // Format the value as Rupiah while typing
+                                          if (value.isNotEmpty) {
+                                            final numericValue =
+                                                int.tryParse(value) ?? 0;
+                                            final formattedValue =
+                                                RupiahFormatter.format(
+                                                  numericValue,
+                                                );
+
+                                            // Update the text field with formatted value
+                                            // But keep cursor position at the end
+                                            _priceController
+                                                .value = TextEditingValue(
+                                              text: formattedValue,
+                                              selection:
+                                                  TextSelection.collapsed(
+                                                    offset:
+                                                        formattedValue.length,
+                                                  ),
+                                            );
+                                          }
+                                        },
+                                      ),
                                     ),
-                                    border: InputBorder.none,
-                                  ),
+                                  ],
                                 ),
                               ),
                             ),
