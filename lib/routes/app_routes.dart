@@ -23,7 +23,7 @@ class AppRoutes {
     '/Produk': (BuildContext context) => Produk(),
     '/Stok': (BuildContext context) => Stok(),
     '/TambahProduk': (BuildContext context) => TambahProduk(),
-    '/EditProduk': (BuildContext context) => EditProduk(),
+
     '/EditStok': (BuildContext context) => EditStok(),
     '/Keranjang': (BuildContext context) => Keranjang(),
     '/Settings': (BuildContext context) => Settings(),

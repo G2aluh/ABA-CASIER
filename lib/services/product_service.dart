@@ -144,18 +144,21 @@ class ProductService {
     try {
       _ensureInitialized();
       debugPrint('Uploading product image: $fileName');
+      debugPrint('Image bytes length: ${bytes.length}');
 
       await _supabase.storage.from('item').uploadBinary(fileName, bytes);
 
       // Get public URL for the uploaded image
       final url = _supabase.storage.from('item').getPublicUrl(fileName);
       debugPrint('Image uploaded successfully');
+      debugPrint('Generated URL: $url');
 
       return url;
     } catch (e, stackTrace) {
       debugPrint('Failed to upload image: $e');
       debugPrint('Stack trace: $stackTrace');
-      return null;
+      // Return a more descriptive error
+      throw Exception('Gagal mengunggah gambar: $e');
     }
   }
 

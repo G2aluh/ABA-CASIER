@@ -38,7 +38,7 @@ class CardProduk extends StatelessWidget {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(8),
-                child: Image.asset(image, width: 50, height: 50),
+                child: _buildImage(),
               ),
             ),
             SizedBox(width: 4),
@@ -49,7 +49,7 @@ class CardProduk extends StatelessWidget {
                   Text(
                     productName,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 14,
                       color: Colors.black,
                       fontWeight: FontWeight.w500,
                       fontFamily: 'CircularStd',
@@ -60,7 +60,7 @@ class CardProduk extends StatelessWidget {
                       Text(
                         price,
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 16,
                           color: Warna().Ijo,
                           fontWeight: FontWeight.w600,
                           fontFamily: 'GeneralSans',
@@ -157,5 +157,24 @@ class CardProduk extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildImage() {
+    // Check if the image is a network URL (starts with http)
+    if (image.startsWith('http')) {
+      return Image.network(
+        image,
+        width: 50,
+        height: 50,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback to a default asset image if network image fails to load
+          return Image.asset('assets/fish.png', width: 50, height: 50);
+        },
+      );
+    } else {
+      // Assume it's an asset image
+      return Image.asset(image, width: 50, height: 50);
+    }
   }
 }

@@ -59,7 +59,7 @@ class _LoginState extends State<Login> {
                 Padding(
                   padding: const EdgeInsets.only(top: 45),
                   child: Text(
-                    'Email',
+                    'Emailmu',
                     style: TextStyle(
                       color: Warna().Putih,
                       fontSize: 14,

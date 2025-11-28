@@ -1,11 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:simulasi_ukk/Widgets/custom_search_bar.dart';
 import 'package:simulasi_ukk/models/model_warna.dart';
 import 'package:simulasi_ukk/Widgets/card_produk.dart';
 import 'package:simulasi_ukk/Widgets/custom_appbar.dart';
 import 'package:simulasi_ukk/Widgets/custom_bottom_navbar.dart';
+import 'package:simulasi_ukk/providers/product_provider.dart';
+import 'package:simulasi_ukk/models/product_model.dart';
+import 'package:simulasi_ukk/screens/EditProduk.dart';
+import 'package:simulasi_ukk/utils/rupiah.dart';
 
-class Produk extends StatelessWidget {
+class Produk extends StatefulWidget {
+  @override
+  _ProdukState createState() => _ProdukState();
+}
+
+class _ProdukState extends State<Produk> {
+  String? _selectedCategory;
+  final List<String> _categories = ['Game', 'Musik', 'Produktif'];
+
+  @override
+  void initState() {
+    super.initState();
+    // Load products when the screen is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final productProvider = Provider.of<ProductProvider>(
+        context,
+        listen: false,
+      );
+      productProvider.getProducts();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -24,11 +50,8 @@ class Produk extends StatelessWidget {
         child: Container(
           child: Column(
             children: [
-              CustomSearchBar(
-                hintText: 'Cari Produk',
-              ),
+              CustomSearchBar(hintText: 'Cari Produk'),
               SizedBox(height: 8),
-
               // Filter Button
               Row(
                 children: [
@@ -42,7 +65,11 @@ class Produk extends StatelessWidget {
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      setState(() {
+                        _selectedCategory = null;
+                      });
+                    },
                     child: Text(
                       'All',
                       style: TextStyle(
@@ -53,70 +80,91 @@ class Produk extends StatelessWidget {
                       ),
                     ),
                   ),
-
                   SizedBox(width: 8),
                   //Game
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       shadowColor: Colors.transparent,
-                      backgroundColor: Warna().bgIjo,
+                      backgroundColor: _selectedCategory == 'Game'
+                          ? Warna().Ijo
+                          : Warna().bgIjo,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      setState(() {
+                        _selectedCategory = 'Game';
+                      });
+                    },
                     child: Text(
                       'Game',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Warna().Ijo,
+                        color: _selectedCategory == 'Game'
+                            ? Warna().Putih
+                            : Warna().Ijo,
                         fontWeight: FontWeight.w400,
                         fontFamily: 'CircularStd',
                       ),
                     ),
                   ),
                   SizedBox(width: 8),
-
                   //Musik
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       shadowColor: Colors.transparent,
-                      backgroundColor: Warna().bgIjo,
+                      backgroundColor: _selectedCategory == 'Musik'
+                          ? Warna().Ijo
+                          : Warna().bgIjo,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      setState(() {
+                        _selectedCategory = 'Musik';
+                      });
+                    },
                     child: Text(
                       'Musik',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Warna().Ijo,
+                        color: _selectedCategory == 'Musik'
+                            ? Warna().Putih
+                            : Warna().Ijo,
                         fontWeight: FontWeight.w400,
                         fontFamily: 'CircularStd',
                       ),
                     ),
                   ),
                   SizedBox(width: 8),
-
                   //Produktif
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       shadowColor: Colors.transparent,
-                      backgroundColor: Warna().bgIjo,
+                      backgroundColor: _selectedCategory == 'Produktif'
+                          ? Warna().Ijo
+                          : Warna().bgIjo,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      setState(() {
+                        _selectedCategory = 'Produktif';
+                      });
+                    },
                     child: Text(
                       'Produktif',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Warna().Ijo,
+                        color: _selectedCategory == 'Produktif'
+                            ? Warna().Putih
+                            : Warna().Ijo,
                         fontWeight: FontWeight.w400,
                         fontFamily: 'CircularStd',
                       ),
@@ -125,7 +173,6 @@ class Produk extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 8),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
@@ -169,57 +216,85 @@ class Produk extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 8),
+              // Display products using Consumer for real-time updates
+              Expanded(
+                child: Consumer<ProductProvider>(
+                  builder: (context, productProvider, child) {
+                    if (productProvider.isLoading &&
+                        productProvider.products.isEmpty) {
+                      return Center(child: CircularProgressIndicator());
+                    }
 
-              //Card untuk produk yang sudah dibuat
-              CardProduk(
-                image: 'assets/fish.png',
-                productName: 'Fish',
-                price: 'IDR. 100.000',
-                stock: 8,
-                onEdit: () {
-                  // Navigate to EditProduk page with product data
-                  Navigator.pushNamed(
-                    context,
-                    '/EditProduk',
-                    arguments: {
-                      'name': 'Fish',
-                      'price': 'IDR. 100.000',
-                      'category': 'Game',
-                      'image': 'assets/fish.png',
-                      'stock': 8,
-                    },
-                  );
-                },
-                onDelete: () {
-                  // Handle delete action
-                  _confirmDeleteProduct(context);
-                },
+                    if (productProvider.errorMessage != null) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Error: ${productProvider.errorMessage}'),
+                            ElevatedButton(
+                              onPressed: () {
+                                productProvider.getProducts();
+                              },
+                              child: Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    // Filter products based on selected category
+                    List<ProductModel> filteredProducts =
+                        productProvider.products;
+                    if (_selectedCategory != null) {
+                      filteredProducts = productProvider.products.where((
+                        product,
+                      ) {
+                        if (product.category == null) return false;
+                        return product.category!.displayName ==
+                            _selectedCategory;
+                      }).toList();
+                    }
+
+                    if (filteredProducts.isEmpty) {
+                      return Center(child: Text('Tidak ada produk'));
+                    }
+
+                    return ListView.builder(
+                      itemCount: filteredProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = filteredProducts[index];
+                        return CardProduk(
+                          image: product.imageUrl ?? 'assets/fish.png',
+                          productName: product.name,
+                          price: RupiahFormatter.format(product.price),
+                          stock:
+                              0, // We'll need to get stock information from a separate table
+                          onEdit: () {
+                            // Navigate to EditProduk page with product data
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    EditProduk(product: product),
+                              ),
+                            );
+                          },
+                          onDelete: () {
+                            _confirmDeleteProduct(
+                              context,
+                              product.id!,
+                              product.name,
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
-              SizedBox(height: 8),
-              CardProduk(
-                image: 'assets/notes.png',
-                productName: 'Book Moon',
-                price: 'IDR. 150.000',
-                stock: 12,
-                onEdit: () {
-                  // Navigate to EditProduk page with product data
-                  Navigator.pushNamed(
-                    context,
-                    '/EditProduk',
-                    arguments: {
-                      'name': 'Book Moon',
-                      'price': 'IDR. 150.000',
-                      'category': 'Musik',
-                      'image': 'assets/notes.png',
-                      'stock': 12,
-                    },
-                  );
-                },
-                onDelete: () {
-                  _confirmDeleteProduct(context);
-                },
-              ),
+              SizedBox(height: 12),
             ],
+            
           ),
         ),
       ),
@@ -251,10 +326,12 @@ class Produk extends StatelessWidget {
         break;
     }
   }
-}
 
-
-void _confirmDeleteProduct(BuildContext context) {
+  void _confirmDeleteProduct(
+    BuildContext context,
+    int productId,
+    String productName,
+  ) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -287,7 +364,7 @@ void _confirmDeleteProduct(BuildContext context) {
               text: 'Apakah Anda yakin ingin menghapus',
               children: [
                 TextSpan(
-                  text: ' Produk(Nama Produk)',
+                  text: ' $productName',
                   style: TextStyle(
                     fontFamily: "CircularStd",
                     fontWeight: FontWeight.w400,
@@ -325,9 +402,24 @@ void _confirmDeleteProduct(BuildContext context) {
                   ),
                   padding: MaterialStateProperty.all(EdgeInsets.all(12)),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(context).pop();
-                  Navigator.of(context).pop();
+                  try {
+                    final productProvider = Provider.of<ProductProvider>(
+                      context,
+                      listen: false,
+                    );
+                    await productProvider.deleteProduct(productId);
+                    // Show success message
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Produk berhasil dihapus')),
+                    );
+                  } catch (e) {
+                    // Show error message
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal menghapus produk: $e')),
+                    );
+                  }
                 },
                 child: Text(
                   'Hapus',
@@ -345,3 +437,4 @@ void _confirmDeleteProduct(BuildContext context) {
       },
     );
   }
+}

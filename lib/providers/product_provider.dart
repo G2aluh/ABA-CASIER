@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:simulasi_ukk/models/product_model.dart';
 import 'package:simulasi_ukk/services/product_service.dart';
+import 'dart:typed_data';
 
 class ProductProvider with ChangeNotifier {
   final ProductService _productService = ProductService();
@@ -99,5 +100,30 @@ class ProductProvider with ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
+  }
+
+  // Upload product image
+  Future<String?> uploadProductImage(
+    Uint8List imageBytes,
+    String fileName,
+  ) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final url = await _productService.uploadProductImage(
+        imageBytes,
+        fileName,
+      );
+      _isLoading = false;
+      notifyListeners();
+      return url;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
   }
 }

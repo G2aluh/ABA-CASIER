@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:simulasi_ukk/providers/auth_provider.dart';
 import 'package:simulasi_ukk/providers/database_provider.dart';
+import 'package:simulasi_ukk/providers/product_provider.dart';
 import 'package:simulasi_ukk/routes/app_routes.dart';
 import 'package:simulasi_ukk/screens/Dasboard.dart';
 import 'package:simulasi_ukk/screens/Keranjang.dart';
@@ -26,6 +27,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => DatabaseProvider()),
+        ChangeNotifierProvider(create: (_) => ProductProvider()),
       ],
       child: MyApp(),
     ),

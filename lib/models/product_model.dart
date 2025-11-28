@@ -23,7 +23,7 @@ class ProductModel {
     required this.price,
     this.imageUrl,
     this.category,
-    this.deletedAt,
+    this.deletedAt, 
     this.recoveryAt,
   });
 
