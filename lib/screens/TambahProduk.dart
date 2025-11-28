@@ -122,19 +122,8 @@ class _TambahProdukState extends State<TambahProduk> {
         }
       }
 
-      // Map category string to enum
-      ProductCategory? category;
-      switch (_selectedCategory) {
-        case 'Game':
-          category = ProductCategory.game;
-          break;
-        case 'Musik':
-          category = ProductCategory.musik;
-          break;
-        case 'Produktif':
-          category = ProductCategory.produktif;
-          break;
-      }
+      // Use category string directly
+      String? category = _selectedCategory;
 
       // Create product model
       final product = ProductModel(
@@ -242,7 +231,6 @@ class _TambahProdukState extends State<TambahProduk> {
                                               size: 80,
                                               color: Colors.grey,
                                             ),
-                                     
                                     ],
                                   ),
                                 ),
@@ -250,17 +238,17 @@ class _TambahProdukState extends State<TambahProduk> {
                             ),
                             SizedBox(height: 8),
                             Text(
-                                        _pickedImageBytes != null
-                                            ? 'Ganti Foto'
-                                            : 'Tambah Foto',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
-                                          fontWeight: FontWeight.w400,
-                                          fontFamily: 'CircularStd',
-                                        ),
-                                      ),
-                                      SizedBox(height: 8),
+                              _pickedImageBytes != null
+                                  ? 'Ganti Foto'
+                                  : 'Tambah Foto',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w400,
+                                fontFamily: 'CircularStd',
+                              ),
+                            ),
+                            SizedBox(height: 8),
                             // Nama Produk field
                             Row(
                               mainAxisAlignment: MainAxisAlignment.start,
@@ -408,7 +396,9 @@ class _TambahProdukState extends State<TambahProduk> {
                                         ),
                                       ),
                                       icon: Padding(
-                                        padding: const EdgeInsets.only(right: 17),
+                                        padding: const EdgeInsets.only(
+                                          right: 17,
+                                        ),
                                         child: Icon(
                                           Icons.arrow_drop_down,
                                           color: Colors.black,

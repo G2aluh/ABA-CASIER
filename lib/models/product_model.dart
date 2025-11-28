@@ -1,19 +1,9 @@
-enum ProductCategory {
-  game(1, 'Game'),
-  musik(2, 'Musik'),
-  produktif(3, 'Produktif');
-
-  final int value;
-  final String displayName;
-  const ProductCategory(this.value, this.displayName);
-}
-
 class ProductModel {
   final int? id; // produkid (bigint)
   final String name;
   final int price;
   final String? imageUrl;
-  final ProductCategory? category; // ← GANTI JADI ENUM
+  final String? category; // Using String instead of enum
   final DateTime? deletedAt;
   final DateTime? recoveryAt;
 
@@ -23,38 +13,21 @@ class ProductModel {
     required this.price,
     this.imageUrl,
     this.category,
-    this.deletedAt, 
+    this.deletedAt,
     this.recoveryAt,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
-    ProductCategory? cat;
+    String? category;
     final catValue = json['kategori_produk'];
 
+    // Handle category as string directly
     if (catValue != null) {
-      // Handle both integer and string representations of the enum
-      if (catValue is int) {
-        try {
-          cat = ProductCategory.values.firstWhere((e) => e.value == catValue);
-        } catch (e) {
-          // If category value doesn't match any enum, leave cat as null
-          cat = null;
-        }
-      } else if (catValue is String) {
-        // Handle string representation
-        try {
-          cat = ProductCategory.values.firstWhere((e) => e.name == catValue);
-        } catch (e) {
-          // Try to match by displayName
-          try {
-            cat = ProductCategory.values.firstWhere(
-              (e) => e.displayName == catValue,
-            );
-          } catch (e) {
-            // If category value doesn't match any enum, leave cat as null
-            cat = null;
-          }
-        }
+      if (catValue is String) {
+        category = catValue;
+      } else if (catValue is int) {
+        // Convert integer to string representation
+        category = catValue.toString();
       }
     }
 
@@ -63,7 +36,7 @@ class ProductModel {
       name: json['namaproduk']?.toString() ?? '',
       price: int.tryParse(json['harga'].toString()) ?? 0,
       imageUrl: json['gambar_url']?.toString(),
-      category: cat,
+      category: category,
       deletedAt: json['deleted_at'] != null
           ? DateTime.tryParse(json['deleted_at'])
           : null,
@@ -78,9 +51,7 @@ class ProductModel {
       'namaproduk': name,
       'harga': price,
       'gambar_url': imageUrl,
-      'kategori_produk': category != null
-          ? category!.value
-          : null, // ← KIRIM ANGKA!
+      'kategori_produk': category, // Send string directly
     };
   }
 
@@ -89,9 +60,7 @@ class ProductModel {
       'namaproduk': name,
       'harga': price,
       'gambar_url': imageUrl,
-      'kategori_produk': category != null
-          ? category!.value
-          : null, // ← ANGKA LAGI
+      'kategori_produk': category, // Send string directly
     };
   }
 
@@ -100,7 +69,7 @@ class ProductModel {
     String? name,
     int? price,
     String? imageUrl,
-    ProductCategory? category,
+    String? category,
     DateTime? deletedAt,
     DateTime? recoveryAt,
   }) {

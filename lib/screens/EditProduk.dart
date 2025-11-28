@@ -20,7 +20,7 @@ class EditProduk extends StatefulWidget {
 }
 
 class _EditProdukState extends State<EditProduk> {
-  ProductCategory? _selectedCategory;
+  String? _selectedCategory;
   final List<String> _categories = ['Game', 'Musik', 'Produktif'];
 
   // Controllers for form fields
@@ -146,22 +146,8 @@ class _EditProdukState extends State<EditProduk> {
         }
       }
 
-      // Map category string to enum
-      ProductCategory? category = _selectedCategory;
-      switch (_selectedCategory) {
-        case ProductCategory.game:
-          category = ProductCategory.game;
-          break;
-        case ProductCategory.musik:
-          category = ProductCategory.musik;
-          break;
-        case ProductCategory.produktif:
-          category = ProductCategory.produktif;
-          break;
-        case null:
-          // TODO: Handle this case.
-          throw UnimplementedError();
-      }
+      // Use category string directly
+      String? category = _selectedCategory;
 
       // Create updated product model
       final updatedProduct = widget.product.copyWith(
@@ -440,7 +426,7 @@ class _EditProdukState extends State<EditProduk> {
                                   child: ButtonTheme(
                                     alignedDropdown: true,
                                     child: DropdownButton<String>(
-                                      value: _selectedCategory?.displayName,
+                                      value: _selectedCategory,
                                       hint: Padding(
                                         padding: const EdgeInsets.only(left: 2),
                                         child: Text(
@@ -466,7 +452,7 @@ class _EditProdukState extends State<EditProduk> {
                                       isExpanded: true,
                                       onChanged: (String? newValue) {
                                         setState(() {
-                                          _selectedCategory = newValue != null ? ProductCategory.values.firstWhere((element) => element.displayName == newValue) : null;
+                                          _selectedCategory = newValue;
                                         });
                                       },
                                       items: _categories
@@ -500,7 +486,7 @@ class _EditProdukState extends State<EditProduk> {
                                 ),
                               ),
                             ),
-                            SizedBox(height: 10), 
+                            SizedBox(height: 10),
                             Row(
                               children: [
                                 Expanded(

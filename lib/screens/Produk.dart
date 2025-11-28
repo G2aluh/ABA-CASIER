@@ -59,7 +59,7 @@ class _ProdukState extends State<Produk> {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       shadowColor: Colors.transparent,
-                      backgroundColor: Warna().Ijo,
+                      backgroundColor: _selectedCategory == null ? Warna().Ijo : Warna().bgIjo,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6),
@@ -74,7 +74,7 @@ class _ProdukState extends State<Produk> {
                       'All',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Warna().Putih,
+                        color: _selectedCategory == null ? Warna().Putih : Warna().Ijo,
                         fontWeight: FontWeight.w400,
                         fontFamily: 'CircularStd',
                       ),
@@ -250,8 +250,7 @@ class _ProdukState extends State<Produk> {
                         product,
                       ) {
                         if (product.category == null) return false;
-                        return product.category!.displayName ==
-                            _selectedCategory;
+                        return product.category == _selectedCategory;
                       }).toList();
                     }
 
@@ -294,7 +293,6 @@ class _ProdukState extends State<Produk> {
               ),
               SizedBox(height: 12),
             ],
-            
           ),
         ),
       ),
