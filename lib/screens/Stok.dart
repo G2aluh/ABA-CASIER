@@ -323,6 +323,7 @@ class _StokState extends State<Stok> with SingleTickerProviderStateMixin {
                           ),
                         ),
                         Expanded(
+                          //Card Produk di stok
                           child: CardProdukStok(
                             productName: _products[1]['name'],
                             status: _products[1]['status'],
