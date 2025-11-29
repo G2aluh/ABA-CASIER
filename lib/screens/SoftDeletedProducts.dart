@@ -383,7 +383,7 @@ class _SoftDeletedProductsState extends State<SoftDeletedProducts> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  backgroundColor: MaterialStateProperty.all(Warna().Abu),
+                  backgroundColor: MaterialStateProperty.all(Warna().MerahGelap),
                   padding: MaterialStateProperty.all(EdgeInsets.all(12)),
                 ),
                 onPressed: () {
@@ -504,7 +504,7 @@ class _SoftDeletedProductsState extends State<SoftDeletedProducts> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  backgroundColor: MaterialStateProperty.all(Warna().Abu),
+                  backgroundColor: MaterialStateProperty.all(Warna().Ijo),
                   padding: MaterialStateProperty.all(EdgeInsets.all(12)),
                 ),
                 onPressed: () {
