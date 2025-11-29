@@ -17,20 +17,8 @@ class Produk extends StatefulWidget {
 
 class _ProdukState extends State<Produk> {
   String? _selectedCategory;
+  String _searchQuery = '';
   final List<String> _categories = ['Game', 'Musik', 'Produktif'];
-
-  @override
-  void initState() {
-    super.initState();
-    // Load products when the screen is initialized
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final productProvider = Provider.of<ProductProvider>(
-        context,
-        listen: false,
-      );
-      productProvider.getProducts();
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +38,14 @@ class _ProdukState extends State<Produk> {
         child: Container(
           child: Column(
             children: [
-              CustomSearchBar(hintText: 'Cari Produk'),
+              CustomSearchBar(
+                hintText: 'Cari Produk',
+                onChanged: (query) {
+                  setState(() {
+                    _searchQuery = query.toLowerCase();
+                  });
+                },
+              ),
               SizedBox(height: 8),
               // Filter Button
               Row(
@@ -59,7 +54,9 @@ class _ProdukState extends State<Produk> {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       shadowColor: Colors.transparent,
-                      backgroundColor: _selectedCategory == null ? Warna().Ijo : Warna().bgIjo,
+                      backgroundColor: _selectedCategory == null
+                          ? Warna().Ijo
+                          : Warna().bgIjo,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6),
@@ -74,7 +71,9 @@ class _ProdukState extends State<Produk> {
                       'All',
                       style: TextStyle(
                         fontSize: 12,
-                        color: _selectedCategory == null ? Warna().Putih : Warna().Ijo,
+                        color: _selectedCategory == null
+                            ? Warna().Putih
+                            : Warna().Ijo,
                         fontWeight: FontWeight.w400,
                         fontFamily: 'CircularStd',
                       ),
@@ -213,27 +212,71 @@ class _ProdukState extends State<Produk> {
                       ),
                     ),
                   ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/SoftDeletedProducts');
+                    },
+                    child: Card(
+                      color: Warna().MerahGelap,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          left: 10,
+                          right: 18,
+                          top: 8,
+                          bottom: 8,
+                        ),
+                        child: Center(
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.delete,
+                                color: Warna().Putih,
+                                size: 20,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'Produk Terhapus',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Warna().Putih,
+                                  fontWeight: FontWeight.w400,
+                                  fontFamily: 'CircularStd',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
               SizedBox(height: 8),
-              // Display products using Consumer for real-time updates
+              // Display products using StreamBuilder for real-time updates
               Expanded(
-                child: Consumer<ProductProvider>(
-                  builder: (context, productProvider, child) {
-                    if (productProvider.isLoading &&
-                        productProvider.products.isEmpty) {
+                child: StreamBuilder<List<ProductModel>>(
+                  stream: Provider.of<ProductProvider>(
+                    context,
+                    listen: false,
+                  ).productsStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
                       return Center(child: CircularProgressIndicator());
                     }
 
-                    if (productProvider.errorMessage != null) {
+                    if (snapshot.hasError) {
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text('Error: ${productProvider.errorMessage}'),
+                            Text('Error: ${snapshot.error}'),
                             ElevatedButton(
                               onPressed: () {
-                                productProvider.getProducts();
+                                // The stream will automatically reconnect
                               },
                               child: Text('Retry'),
                             ),
@@ -242,20 +285,34 @@ class _ProdukState extends State<Produk> {
                       );
                     }
 
-                    // Filter products based on selected category
-                    List<ProductModel> filteredProducts =
-                        productProvider.products;
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(child: Text('Tidak ada produk'));
+                    }
+
+                    // Filter products based on search query and selected category
+                    List<ProductModel> filteredProducts = snapshot.data!;
+
+                    // Apply search filter
+                    if (_searchQuery.isNotEmpty) {
+                      filteredProducts = filteredProducts.where((product) {
+                        return product.name.toLowerCase().contains(
+                          _searchQuery,
+                        );
+                      }).toList();
+                    }
+
+                    // Apply category filter
                     if (_selectedCategory != null) {
-                      filteredProducts = productProvider.products.where((
-                        product,
-                      ) {
+                      filteredProducts = filteredProducts.where((product) {
                         if (product.category == null) return false;
                         return product.category == _selectedCategory;
                       }).toList();
                     }
 
                     if (filteredProducts.isEmpty) {
-                      return Center(child: Text('Tidak ada produk'));
+                      return Center(
+                        child: Text('Tidak ada produk yang sesuai'),
+                      );
                     }
 
                     return ListView.builder(

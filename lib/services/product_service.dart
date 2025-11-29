@@ -73,6 +73,30 @@ class ProductService {
     }
   }
 
+  // Get soft deleted products
+  Future<List<ProductModel>> getSoftDeletedProducts() async {
+    try {
+      _ensureInitialized();
+      debugPrint('Fetching soft deleted products from Supabase');
+
+      final response = await _supabase
+          .from('produk')
+          .select()
+          .not('deleted_at', 'is', null)
+          .order('produkid');
+
+      debugPrint(
+        'Soft deleted products fetched successfully, count: ${response.length}',
+      );
+
+      return response.map((data) => ProductModel.fromJson(data)).toList();
+    } catch (e, stackTrace) {
+      debugPrint('Failed to fetch soft deleted products: $e');
+      debugPrint('Stack trace: $stackTrace');
+      throw Exception('Failed to fetch soft deleted products: $e');
+    }
+  }
+
   // Add a new product
   Future<ProductModel> addProduct(ProductModel product) async {
     try {
@@ -124,18 +148,53 @@ class ProductService {
   Future<void> deleteProduct(int productId) async {
     try {
       _ensureInitialized();
-      debugPrint('Deleting product with ID: $productId');
+      debugPrint('Soft deleting product with ID: $productId');
 
       await _supabase
           .from('produk')
           .update({'deleted_at': DateTime.now().toIso8601String()})
           .eq('produkid', productId);
 
-      debugPrint('Product deleted successfully');
+      debugPrint('Product soft deleted successfully');
     } catch (e, stackTrace) {
-      debugPrint('Failed to delete product: $e');
+      debugPrint('Failed to soft delete product: $e');
       debugPrint('Stack trace: $stackTrace');
-      throw Exception('Failed to delete product: $e');
+      throw Exception('Failed to soft delete product: $e');
+    }
+  }
+
+  // Restore a soft deleted product (clear deleted_at timestamp)
+  Future<void> restoreProduct(int productId) async {
+    try {
+      _ensureInitialized();
+      debugPrint('Restoring product with ID: $productId');
+
+      await _supabase
+          .from('produk')
+          .update({'deleted_at': null})
+          .eq('produkid', productId);
+
+      debugPrint('Product restored successfully');
+    } catch (e, stackTrace) {
+      debugPrint('Failed to restore product: $e');
+      debugPrint('Stack trace: $stackTrace');
+      throw Exception('Failed to restore product: $e');
+    }
+  }
+
+  // Permanently delete a product
+  Future<void> permanentlyDeleteProduct(int productId) async {
+    try {
+      _ensureInitialized();
+      debugPrint('Permanently deleting product with ID: $productId');
+
+      await _supabase.from('produk').delete().eq('produkid', productId);
+
+      debugPrint('Product permanently deleted successfully');
+    } catch (e, stackTrace) {
+      debugPrint('Failed to permanently delete product: $e');
+      debugPrint('Stack trace: $stackTrace');
+      throw Exception('Failed to permanently delete product: $e');
     }
   }
 
@@ -162,19 +221,31 @@ class ProductService {
     }
   }
 
-  // Get real-time product stream
-  Stream<List<ProductModel>> getProductStream() {
+  // Get real-time product stream with proper filtering
+  Stream<List<Map<String, dynamic>>> getProductStream() {
     _ensureInitialized();
-    debugPrint('Creating product stream');
+    debugPrint('Creating product stream with real-time updates');
 
+    // Create the stream without filtering first
     return _supabase
         .from('produk')
         .stream(primaryKey: ['produkid'])
         .map(
-          (list) => list
-              .where((data) => data['deleted_at'] == null)
-              .map((data) => ProductModel.fromJson(data))
-              .toList(),
+          (list) => list.where((data) => data['deleted_at'] == null).toList(),
+        );
+  }
+
+  // Get real-time stream for soft deleted products
+  Stream<List<Map<String, dynamic>>> getSoftDeletedProductStream() {
+    _ensureInitialized();
+    debugPrint('Creating soft deleted product stream with real-time updates');
+
+    // Create the stream for soft deleted products
+    return _supabase
+        .from('produk')
+        .stream(primaryKey: ['produkid'])
+        .map(
+          (list) => list.where((data) => data['deleted_at'] != null).toList(),
         );
   }
 }

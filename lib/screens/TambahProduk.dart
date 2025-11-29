@@ -142,10 +142,8 @@ class _TambahProdukState extends State<TambahProduk> {
       );
       await productProvider.addProduct(product);
 
-      // Show success message
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Produk berhasil ditambahkan')));
+      // Show quick alert
+      productProvider.showQuickAlert(context, 'Produk berhasil ditambahkan');
 
       // Navigate back
       Navigator.pop(context);

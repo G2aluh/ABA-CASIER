@@ -167,10 +167,8 @@ class _EditProdukState extends State<EditProduk> {
       );
       await productProvider.updateProduct(updatedProduct);
 
-      // Show success message
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Produk berhasil diperbarui')));
+      // Show quick alert
+      productProvider.showQuickAlert(context, 'Produk berhasil diperbarui');
 
       // Navigate back
       Navigator.pop(context);

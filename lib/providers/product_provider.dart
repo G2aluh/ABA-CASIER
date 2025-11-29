@@ -10,11 +10,36 @@ class ProductProvider with ChangeNotifier {
   String? _errorMessage;
   List<ProductModel> _products = [];
 
+  // Stream for real-time updates
+  late Stream<List<ProductModel>> _productsStream;
+
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   List<ProductModel> get products => _products;
 
-  // Get all products
+  // Getter for the products stream
+  Stream<List<ProductModel>> get productsStream => _productsStream;
+
+  ProductProvider() {
+    // Initialize the stream when the provider is created
+    _initStream();
+  }
+
+  // Initialize the real-time stream
+  void _initStream() {
+    _productsStream = _productService.getProductStream().map(
+      (list) => list.map((data) => ProductModel.fromJson(data)).toList(),
+    );
+  }
+
+  // Get stream for soft deleted products
+  Stream<List<ProductModel>> getSoftDeletedProductStream() {
+    return _productService.getSoftDeletedProductStream().map(
+      (list) => list.map((data) => ProductModel.fromJson(data)).toList(),
+    );
+  }
+
+  // Get all products (manual fetch)
   Future<void> getProducts() async {
     _isLoading = true;
     _errorMessage = null;
@@ -24,6 +49,26 @@ class ProductProvider with ChangeNotifier {
       _products = await _productService.getProducts();
       _isLoading = false;
       notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  // Get soft deleted products
+  Future<List<ProductModel>> getSoftDeletedProducts() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final softDeletedProducts = await _productService
+          .getSoftDeletedProducts();
+      _isLoading = false;
+      notifyListeners();
+      return softDeletedProducts;
     } catch (e) {
       _errorMessage = e.toString();
       _isLoading = false;
@@ -94,6 +139,57 @@ class ProductProvider with ChangeNotifier {
       notifyListeners();
       rethrow;
     }
+  }
+
+  // Restore a soft deleted product
+  Future<void> restoreProduct(int productId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _productService.restoreProduct(productId);
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  // Permanently delete a product
+  Future<void> permanentlyDeleteProduct(int productId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _productService.permanentlyDeleteProduct(productId);
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  // Show quick alert/snackbar
+  void showQuickAlert(
+    BuildContext context,
+    String message, {
+    Color? backgroundColor,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor ?? Color(0xFF10B981),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   // Clear error message

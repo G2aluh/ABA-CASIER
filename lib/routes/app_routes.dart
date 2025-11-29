@@ -12,6 +12,7 @@ import 'package:simulasi_ukk/screens/EditStok.dart';
 import 'package:simulasi_ukk/screens/Keranjang.dart';
 import 'package:simulasi_ukk/screens/Settings.dart';
 import 'package:simulasi_ukk/screens/PembayaranBerhasil.dart';
+import 'package:simulasi_ukk/screens/SoftDeletedProducts.dart';
 
 class AppRoutes {
   static final routes = <String, WidgetBuilder>{
@@ -23,6 +24,7 @@ class AppRoutes {
     '/Produk': (BuildContext context) => Produk(),
     '/Stok': (BuildContext context) => Stok(),
     '/TambahProduk': (BuildContext context) => TambahProduk(),
+    '/SoftDeletedProducts': (BuildContext context) => SoftDeletedProducts(),
 
     '/EditStok': (BuildContext context) => EditStok(),
     '/Keranjang': (BuildContext context) => Keranjang(),
