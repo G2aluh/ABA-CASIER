@@ -20,6 +20,18 @@ class CardProduk extends StatelessWidget {
     required this.onDelete,
   }) : super(key: key);
 
+  // Helper method to determine stock color based on quantity
+  _getStockColor(int stockCount) {
+    final warna = Warna();
+    if (stockCount <= 0) {
+      return {'color': warna.Merah, 'bgColor': warna.bgMerah};
+    } else if (stockCount <= 5) {
+      return {'color': warna.Oren, 'bgColor': warna.bgOren};
+    } else {
+      return {'color': warna.Ijo, 'bgColor': warna.bgIjo};
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -67,7 +79,7 @@ class CardProduk extends StatelessWidget {
                         ),
                       ),
                       Card(
-                        color: Warna().bgIjo,
+                        color: _getStockColor(stock)['bgColor'],
                         shadowColor: Colors.transparent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(6),
@@ -84,7 +96,7 @@ class CardProduk extends StatelessWidget {
                               'Stok: $stock',
                               style: TextStyle(
                                 fontSize: 10,
-                                color: Warna().Ijo,
+                                color: _getStockColor(stock)['color'],
                                 fontWeight: FontWeight.w600,
                                 fontFamily: 'CircularStd',
                               ),

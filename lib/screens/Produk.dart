@@ -6,7 +6,9 @@ import 'package:simulasi_ukk/Widgets/card_produk.dart';
 import 'package:simulasi_ukk/Widgets/custom_appbar.dart';
 import 'package:simulasi_ukk/Widgets/custom_bottom_navbar.dart';
 import 'package:simulasi_ukk/providers/product_provider.dart';
+import 'package:simulasi_ukk/providers/stock_provider.dart';
 import 'package:simulasi_ukk/models/product_model.dart';
+import 'package:simulasi_ukk/models/stok_model.dart';
 import 'package:simulasi_ukk/screens/EditProduk.dart';
 import 'package:simulasi_ukk/utils/rupiah.dart';
 
@@ -19,6 +21,25 @@ class _ProdukState extends State<Produk> {
   String? _selectedCategory;
   String _searchQuery = '';
   final List<String> _categories = ['Game', 'Musik', 'Produktif'];
+
+  @override
+  void initState() {
+    super.initState();
+    // Load initial stock data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadStockData();
+    });
+  }
+
+  _loadStockData() async {
+    try {
+      final stockProvider = Provider.of<StockProvider>(context, listen: false);
+      await stockProvider.getStocks();
+    } catch (e) {
+      print('Error loading stock data: $e');
+      // Show error to user if needed
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -315,31 +336,45 @@ class _ProdukState extends State<Produk> {
                       );
                     }
 
-                    return ListView.builder(
-                      itemCount: filteredProducts.length,
-                      itemBuilder: (context, index) {
-                        final product = filteredProducts[index];
-                        return CardProduk(
-                          image: product.imageUrl ?? 'assets/fish.png',
-                          productName: product.name,
-                          price: RupiahFormatter.format(product.price),
-                          stock:
-                              0, // We'll need to get stock information from a separate table
-                          onEdit: () {
-                            // Navigate to EditProduk page with product data
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    EditProduk(product: product),
-                              ),
-                            );
-                          },
-                          onDelete: () {
-                            _confirmDeleteProduct(
-                              context,
-                              product.id!,
-                              product.name,
+                    // Use Consumer to access StockProvider for real-time stock data
+                    return Consumer<StockProvider>(
+                      builder: (context, stockProvider, child) {
+                        return ListView.builder(
+                          itemCount: filteredProducts.length,
+                          itemBuilder: (context, index) {
+                            final product = filteredProducts[index];
+
+                            // Get stock information for this product
+                            int stockCount = 0;
+                            if (product.id != null) {
+                              final stock = stockProvider
+                                  .getCurrentStockByProductId(product.id!);
+                              stockCount = stock?.jumlahBarang ?? 0;
+                            }
+
+                            return CardProduk(
+                              image: product.imageUrl ?? 'assets/fish.png',
+                              productName: product.name,
+                              price: RupiahFormatter.format(product.price),
+                              stock:
+                                  stockCount, // Use actual stock from database
+                              onEdit: () {
+                                // Navigate to EditProduk page with product data
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        EditProduk(product: product),
+                                  ),
+                                );
+                              },
+                              onDelete: () {
+                                _confirmDeleteProduct(
+                                  context,
+                                  product.id!,
+                                  product.name,
+                                );
+                              },
                             );
                           },
                         );

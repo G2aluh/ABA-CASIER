@@ -52,7 +52,22 @@ class CardProdukStok extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(30),
                     child: Center(
-                      child: Image.asset(image, width: 80, height: 80),
+                      child: image.startsWith('http')
+                          ? Image.network(
+                              image,
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                // Fallback to default image if network image fails
+                                return Image.asset(
+                                  'assets/fish.png',
+                                  width: 80,
+                                  height: 80,
+                                );
+                              },
+                            )
+                          : Image.asset(image, width: 80, height: 80),
                     ),
                   ),
                 ),
