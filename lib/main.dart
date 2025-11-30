@@ -4,6 +4,7 @@ import 'package:simulasi_ukk/providers/auth_provider.dart';
 import 'package:simulasi_ukk/providers/database_provider.dart';
 import 'package:simulasi_ukk/providers/product_provider.dart';
 import 'package:simulasi_ukk/providers/stock_provider.dart';
+import 'package:simulasi_ukk/providers/customer_provider.dart';
 import 'package:simulasi_ukk/routes/app_routes.dart';
 import 'package:simulasi_ukk/screens/Dasboard.dart';
 import 'package:simulasi_ukk/screens/Keranjang.dart';
@@ -30,6 +31,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => DatabaseProvider()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => StockProvider()),
+        ChangeNotifierProvider(create: (_) => CustomerProvider()),
       ],
       child: MyApp(),
     ),

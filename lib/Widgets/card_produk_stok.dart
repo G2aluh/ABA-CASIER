@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:simulasi_ukk/models/model_warna.dart';
+import 'package:provider/provider.dart';
+import '../models/model_warna.dart';
+import '../providers/auth_provider.dart';
 
 class CardProdukStok extends StatelessWidget {
   final String productName;
@@ -23,6 +25,10 @@ class CardProdukStok extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+    final isAdmin = user?.role == 'admin';
+
     return Card(
       color: Warna().Putih,
       shadowColor: Colors.transparent,
@@ -126,25 +132,26 @@ class CardProdukStok extends StatelessWidget {
               ),
             ),
           ),
-          // Edit button at bottom-right corner
-          Positioned(
-            bottom: 18,
-            right: 10,
-            child: GestureDetector(
-              onTap: onEdit,
-              child: Card(
-                color: Warna().bgUtama,
-                shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: Icon(Icons.edit_outlined, size: 20),
+          // Edit button at bottom-right corner (only for admin users)
+          if (isAdmin)
+            Positioned(
+              bottom: 18,
+              right: 10,
+              child: GestureDetector(
+                onTap: onEdit,
+                child: Card(
+                  color: Warna().bgUtama,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Icon(Icons.edit_outlined, size: 20),
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );

@@ -362,58 +362,6 @@ class Dashboard extends StatelessWidget {
                   cashLabel: 'Tunai',
                   cashLabelColor: Warna().Ijo,
                 ),
-
-                // Test and Logout buttons
-                SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Warna().Ijo,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => TestScreen()),
-                        );
-                      },
-                      child: Text(
-                        'Tes Koneksi',
-                        style: TextStyle(color: Warna().Putih),
-                      ),
-                    ),
-                    Consumer<AuthProvider>(
-                      builder: (context, authProvider, child) {
-                        return ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Warna().Merah,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed: () {
-                            authProvider.logout();
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (context) => Login()),
-                              (route) => false,
-                            );
-                          },
-                          child: Text(
-                            'Keluar',
-                            style: TextStyle(color: Warna().Putih),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
                 SizedBox(height: 20),
               ],
             ),

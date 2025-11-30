@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/model_warna.dart';
+import '../models/pelanggan_model.dart';
+import '../providers/customer_provider.dart';
+import '../utils/rupiah.dart';
 import '../Widgets/custom_appbar.dart';
 import '../Widgets/custom_back_button.dart';
 import '../Widgets/custom_search_bar.dart';
@@ -12,19 +16,184 @@ class ManajemenPelanggan extends StatefulWidget {
 class _ManajemenPelangganState extends State<ManajemenPelanggan> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+
+  // Variable to hold the customer being edited
+  PelangganModel? _editingCustomer;
+
+  // Filter customers based on search query
+  List<PelangganModel> _filterCustomers(
+    List<PelangganModel> customers,
+    String query,
+  ) {
+    if (query.isEmpty) return customers;
+    return customers.where((customer) {
+      final customerName = customer.namaPelanggan.toLowerCase();
+      final customerPhone = (customer.noTelp ?? '').toLowerCase();
+      final customerAddress = (customer.alamat ?? '').toLowerCase();
+      final searchQuery = query.toLowerCase();
+
+      return customerName.contains(searchQuery) ||
+          customerPhone.contains(searchQuery) ||
+          customerAddress.contains(searchQuery);
+    }).toList();
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _emailController.dispose();
     _addressController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    // Load customers when the screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCustomers();
+    });
+  }
+
+  // Load customers from the provider
+  void _loadCustomers() {
+    final customerProvider = Provider.of<CustomerProvider>(
+      context,
+      listen: false,
+    );
+    customerProvider.getCustomers();
+  }
+
+  // Clear all text fields
+  void _clearTextFields() {
+    _nameController.clear();
+    _phoneController.clear();
+    _addressController.clear();
+  }
+
+  // Populate text fields with customer data for editing
+  void _populateTextFields(PelangganModel customer) {
+    _nameController.text = customer.namaPelanggan;
+    _phoneController.text = customer.noTelp ?? '';
+    _addressController.text = customer.alamat ?? '';
+  }
+
+  // Add a new customer
+  void _addCustomer() async {
+    final customerProvider = Provider.of<CustomerProvider>(
+      context,
+      listen: false,
+    );
+
+    try {
+      final newCustomer = PelangganModel(
+        namaPelanggan: _nameController.text,
+        alamat: _addressController.text.isNotEmpty
+            ? _addressController.text
+            : null,
+        noTelp: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+        totalPembelian: 0, // Default value
+      );
+
+      await customerProvider.addCustomer(newCustomer);
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Pelanggan berhasil ditambahkan!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      _clearTextFields();
+    } catch (e) {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menambahkan pelanggan: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Update an existing customer
+  void _updateCustomer(PelangganModel customer) async {
+    final customerProvider = Provider.of<CustomerProvider>(
+      context,
+      listen: false,
+    );
+
+    try {
+      final updatedCustomer = PelangganModel(
+        pelangganId: customer.pelangganId,
+        namaPelanggan: _nameController.text,
+        alamat: _addressController.text.isNotEmpty
+            ? _addressController.text
+            : customer.alamat,
+        noTelp: _phoneController.text.isNotEmpty
+            ? _phoneController.text
+            : customer.noTelp,
+        totalPembelian: customer.totalPembelian,
+      );
+
+      await customerProvider.updateCustomer(updatedCustomer);
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Pelanggan berhasil diperbarui!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      _clearTextFields();
+    } catch (e) {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memperbarui pelanggan: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Delete a customer
+  void _deleteCustomer(PelangganModel customer) async {
+    final customerProvider = Provider.of<CustomerProvider>(
+      context,
+      listen: false,
+    );
+
+    try {
+      await customerProvider.deleteCustomer(customer.pelangganId!);
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Pelanggan berhasil dihapus!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menghapus pelanggan: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void _showAddCustomerDialog() {
+    _clearTextFields();
+    _editingCustomer = null;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -64,8 +233,6 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
                 SizedBox(height: 10),
                 _buildTextField(_phoneController, 'Nomor Telepon', Icons.phone),
                 SizedBox(height: 10),
-                _buildTextField(_emailController, 'Email', Icons.email),
-                SizedBox(height: 10),
                 _buildTextField(
                   _addressController,
                   'Alamat',
@@ -77,30 +244,28 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
           actions: [
             SizedBox(
               width: double.infinity,
-              child: Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Handle add customer logic here
-                    Navigator.of(context).pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    shadowColor: Colors.transparent,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    backgroundColor: Warna().Ijo,
+              child: ElevatedButton(
+                onPressed: () {
+                  _addCustomer();
+                  Navigator.of(context).pop();
+                },
+                style: ElevatedButton.styleFrom(
+                  shadowColor: Colors.transparent,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Text(
-                      'Tambah',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: 'CircularStd',
-                        color: Warna().Putih,
-                      ),
+                  backgroundColor: Warna().Ijo,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Text(
+                    'Tambah',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: 'CircularStd',
+                      color: Warna().Putih,
                     ),
                   ),
                 ),
@@ -112,7 +277,10 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
     );
   }
 
-  void _showEditCustomerDialog() {
+  void _showEditCustomerDialog(PelangganModel customer) {
+    _editingCustomer = customer;
+    _populateTextFields(customer);
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -152,8 +320,6 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
                 SizedBox(height: 10),
                 _buildTextField(_phoneController, 'Nomor Telepon', Icons.phone),
                 SizedBox(height: 10),
-                _buildTextField(_emailController, 'Email', Icons.email),
-                SizedBox(height: 10),
                 _buildTextField(
                   _addressController,
                   'Alamat',
@@ -165,66 +331,64 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
           actions: [
             SizedBox(
               width: double.infinity,
-              child: Expanded(
-                child: Row(
-                  children: [
-                    //Tombol Hapus
-                    ElevatedButton(
-                      onPressed: () {
-                        _confirmDeleteCustomer(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        shadowColor: Colors.transparent,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        backgroundColor: Warna().MerahGelap,
+              child: Row(
+                children: [
+                  //Tombol Hapus
+                  ElevatedButton(
+                    onPressed: () {
+                      _confirmDeleteCustomer(context, customer);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      shadowColor: Colors.transparent,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Text(
-                          'Hapus',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: 'CircularStd',
-                            color: Warna().Putih,
-                          ),
+                      backgroundColor: Warna().MerahGelap,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Text(
+                        'Hapus',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          fontFamily: 'CircularStd',
+                          color: Warna().Putih,
                         ),
                       ),
                     ),
-                    SizedBox(width: 10),
+                  ),
+                  SizedBox(width: 10),
 
-                    //Tombol Simpan
-                    ElevatedButton(
-                      onPressed: () {
-                        // Handle edit customer logic here
-                        Navigator.of(context).pop();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        shadowColor: Colors.transparent,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        backgroundColor: Warna().Ijo,
+                  //Tombol Simpan
+                  ElevatedButton(
+                    onPressed: () {
+                      _updateCustomer(customer);
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      shadowColor: Colors.transparent,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Text(
-                          'Simpan',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: 'CircularStd',
-                            color: Warna().Putih,
-                          ),
+                      backgroundColor: Warna().Ijo,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Text(
+                        'Simpan',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          fontFamily: 'CircularStd',
+                          color: Warna().Putih,
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -317,7 +481,7 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
                                 top: 0,
                                 right: 0,
                                 child: Text(
-                                  'Rp. 200.000',
+                                  RupiahFormatter.format(200000),
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontFamily: 'Inter',
@@ -405,104 +569,99 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
     );
   }
 
-    void _confirmDeleteCustomer(BuildContext context) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-            backgroundColor: Warna().Putih,
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Hapus Pelanggan',
-                  style: TextStyle(
-                    fontFamily: "CircularStd",
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                    color: Warna().Hitam,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  icon: Icon(Icons.close, color: Warna().Hitam),
-                ),
-              ],
-            ),
-            content: RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                text: 'Apakah Anda yakin ingin menghapus',
-                children: [
-                  TextSpan(
-                    text: ' Lang(Nama Pelanggan)',
-                    style: TextStyle(
-                      fontFamily: "CircularStd",
-                      fontWeight: FontWeight.w400,
-                      color: Warna().MerahGelap,
-                    ),
-                  ),
-                  TextSpan(
-                    text: '?',
-                    style: TextStyle(
-                      fontFamily: "CircularStd",
-                      fontWeight: FontWeight.w400,
-                      color: Warna().Hitam,
-                    ),
-                  ),
-                ],
+  void _confirmDeleteCustomer(BuildContext context, PelangganModel customer) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          backgroundColor: Warna().Putih,
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Hapus Pelanggan',
                 style: TextStyle(
                   fontFamily: "CircularStd",
-                  fontWeight: FontWeight.w400,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
                   color: Warna().Hitam,
                 ),
               ),
-            ),
-            actions: [
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  style: ButtonStyle(
-                    shape: MaterialStateProperty.all(
-                      RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    backgroundColor: MaterialStateProperty.all(
-                      Warna().MerahGelap,
-                    ),
-                    padding: MaterialStateProperty.all(EdgeInsets.all(12)),
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pop();
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Pelanggan berhasil dihapus!'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  },
-                  child: Text(
-                    'Hapus',
-                    style: TextStyle(
-                      fontFamily: "CircularStd",
-                      fontWeight: FontWeight.w400,
-                      color: Warna().Putih,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+              IconButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                icon: Icon(Icons.close, color: Warna().Hitam),
               ),
             ],
-          );
-        },
-      );
-    }
+          ),
+          content: RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              text: 'Apakah Anda yakin ingin menghapus ',
+              children: [
+                TextSpan(
+                  text: customer.namaPelanggan,
+                  style: TextStyle(
+                    fontFamily: "CircularStd",
+                    fontWeight: FontWeight.w400,
+                    color: Warna().MerahGelap,
+                  ),
+                ),
+                TextSpan(
+                  text: '?',
+                  style: TextStyle(
+                    fontFamily: "CircularStd",
+                    fontWeight: FontWeight.w400,
+                    color: Warna().Hitam,
+                  ),
+                ),
+              ],
+              style: TextStyle(
+                fontFamily: "CircularStd",
+                fontWeight: FontWeight.w400,
+                color: Warna().Hitam,
+              ),
+            ),
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                style: ButtonStyle(
+                  shape: MaterialStateProperty.all(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  backgroundColor: MaterialStateProperty.all(
+                    Warna().MerahGelap,
+                  ),
+                  padding: MaterialStateProperty.all(EdgeInsets.all(12)),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+
+                  _deleteCustomer(customer);
+                },
+                child: Text(
+                  'Hapus',
+                  style: TextStyle(
+                    fontFamily: "CircularStd",
+                    fontWeight: FontWeight.w400,
+                    color: Warna().Putih,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -527,103 +686,168 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
               // Search bar
               Padding(
                 padding: const EdgeInsets.only(top: 20),
-                child: CustomSearchBar(hintText: 'Cari Pelanggan...'),
+                child: CustomSearchBar(
+                  controller: _searchController,
+                  hintText: 'Cari Pelanggan...',
+                  onChanged: (value) {
+                    setState(() {});
+                  },
+                ),
               ),
 
               SizedBox(height: 10),
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                shadowColor: Colors.transparent,
-                color: Warna().Putih,
-                child: GestureDetector(
-                  onTap: () {
-                    _showCustomerHistoryDialog();
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Stack(
-                      children: [
-                        Align(
-                          alignment: Alignment.topRight,
-                          child: Card(
-                            elevation: 0,
-                            color: Warna().Ijo,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                left: 8,
-                                right: 8,
-                                top: 4,
-                                bottom: 4,
-                              ),
-                              child: Text(
-                                "Rp. 200.000",
-                                style: TextStyle(
-                                  color: Warna().Putih,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  fontFamily: 'CircularStd',
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Lang',
-                              style: TextStyle(
-                                letterSpacing: 0.5,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'Inter',
-                              ),
-                            ),
-                            Text(
-                              'Wa: 085236595907',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                                fontFamily: 'Inter',
-                              ),
-                            ),
-                            Text(
-                              'Gmail: example@gmail.com',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                                fontFamily: 'Inter',
-                              ),
-                            ),
-                          ],
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 28,
-                          child: IconButton(
-                            hoverColor: Colors.transparent,
-                            highlightColor: Colors.transparent,
-                            icon: Icon(
-                              Icons.edit,
-                              color: Warna().Ijo,
-                              size: 20,
-                            ),
+
+              // Display list of customers using StreamBuilder for real-time updates
+              StreamBuilder<List<PelangganModel>>(
+                stream: Provider.of<CustomerProvider>(
+                  context,
+                  listen: false,
+                ).customersStream,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    // Show loading indicator while establishing connection
+                    return Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Error: ${snapshot.error}'),
+                          SizedBox(height: 16),
+                          ElevatedButton(
                             onPressed: () {
-                              _showEditCustomerDialog();
+                              // The stream will automatically reconnect
                             },
+                            child: Text('Retry'),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'Belum ada pelanggan',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    );
+                  }
+
+                  // Filter customers based on search query
+                  final filteredCustomers = _filterCustomers(
+                    snapshot.data!,
+                    _searchController.text,
+                  );
+
+                  return Expanded(
+                    child: ListView.builder(
+                      itemCount: filteredCustomers.length,
+                      itemBuilder: (context, index) {
+                        final customer = filteredCustomers[index];
+                        return Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          shadowColor: Colors.transparent,
+                          color: Warna().Putih,
+                          child: GestureDetector(
+                            onTap: () {
+                              _showCustomerHistoryDialog();
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Stack(
+                                children: [
+                                  Align(
+                                    alignment: Alignment.topRight,
+                                    child: Card(
+                                      elevation: 0,
+                                      color: Warna().Ijo,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: 8,
+                                          right: 8,
+                                          top: 4,
+                                          bottom: 4,
+                                        ),
+                                        child: Text(
+                                          RupiahFormatter.format(
+                                            customer.totalPembelian ?? 0,
+                                          ),
+                                          style: TextStyle(
+                                            color: Warna().Putih,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w400,
+                                            fontFamily: 'CircularStd',
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        customer.namaPelanggan,
+                                        style: TextStyle(
+                                          letterSpacing: 0.5,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          fontFamily: 'Inter',
+                                        ),
+                                      ),
+                                      Text(
+                                        'Wa: ${customer.noTelp ?? '-'}',
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w400,
+                                          fontFamily: 'Inter',
+                                        ),
+                                      ),
+                                      Text(
+                                        'Alamat: ${customer.alamat ?? '-'}',
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w400,
+                                          fontFamily: 'Inter',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Positioned(
+                                    right: 0,
+                                    top: 28,
+                                    child: IconButton(
+                                      hoverColor: Colors.transparent,
+                                      highlightColor: Colors.transparent,
+                                      icon: Icon(
+                                        Icons.edit,
+                                        color: Warna().Ijo,
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        _showEditCustomerDialog(customer);
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ],
           ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/model_warna.dart';
+import '../providers/auth_provider.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -25,6 +27,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+    final isAdmin = user?.role == 'admin';
+
     return AppBar(
       automaticallyImplyLeading: showBackButton,
       backgroundColor: Warna().bgUtama,
@@ -52,24 +58,26 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 padding: const EdgeInsets.only(right: 9),
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: onPersonTap,
-                      child: Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        shadowColor: Colors.transparent,
-                        color: Warna().Ijo,
-                        child: Padding(
-                          padding: const EdgeInsets.all(5),
-                          child: Icon(
-                            Icons.people,
-                            size: 25,
-                            color: iconColor ?? Colors.white,
+                    // Show person icon only for admin users
+                    if (isAdmin)
+                      GestureDetector(
+                        onTap: onPersonTap,
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          shadowColor: Colors.transparent,
+                          color: Warna().Ijo,
+                          child: Padding(
+                            padding: const EdgeInsets.all(5),
+                            child: Icon(
+                              Icons.people,
+                              size: 25,
+                              color: iconColor ?? Colors.white,
+                            ),
                           ),
                         ),
                       ),
-                    ),
                     SizedBox(width: 2),
                     GestureDetector(
                       onTap: onSettingsTap,

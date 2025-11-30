@@ -186,7 +186,7 @@ class ProductProvider with ChangeNotifier {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: backgroundColor ?? Color(0xFF10B981),
+        backgroundColor: backgroundColor ?? Color.fromARGB(255, 61, 61, 61),
         duration: Duration(seconds: 2),
       ),
     );

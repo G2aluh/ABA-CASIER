@@ -5,12 +5,14 @@ class CustomSearchBar extends StatefulWidget {
   final String hintText;
   final ValueChanged<String>? onChanged;
   final VoidCallback? onSubmitted;
+  final TextEditingController? controller;
 
   const CustomSearchBar({
     Key? key,
     this.hintText = 'Cari...',
     this.onChanged,
     this.onSubmitted,
+    this.controller,
   }) : super(key: key);
 
   @override
@@ -40,6 +42,7 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      controller: widget.controller,
       focusNode: _focusNode,
       cursorColor: Warna().Ijo,
       style: TextStyle(

@@ -23,36 +23,13 @@ class _StokState extends State<Stok> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    // Load initial data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadData();
-    });
+    // With real-time updates, we don't need to manually load initial data
+    // The StreamBuilder will automatically connect to the streams
   }
 
   _loadData() async {
-    try {
-      final productProvider = Provider.of<ProductProvider>(
-        context,
-        listen: false,
-      );
-      final stockProvider = Provider.of<StockProvider>(context, listen: false);
-
-      // Load products and stock data
-      await productProvider.getProducts();
-      await stockProvider.getStocks();
-      await stockProvider.getStockMutations(limit: 10);
-    } catch (e, stackTrace) {
-      _logError('Failed to load initial data', e, stackTrace);
-      // Show error to user
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal memuat data stok: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+    // With real-time updates, we don't need to manually load initial data
+    // The StreamBuilder will automatically connect to the streams
   }
 
   // Helper method to log errors with detailed information
@@ -229,11 +206,40 @@ class _StokState extends State<Stok> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildStatsCards(BuildContext context) {
-    return Consumer<StockProvider>(
-      builder: (context, stockProvider, child) {
+    // Use StreamBuilder for real-time stock updates
+    return StreamBuilder<List<StokModel>>(
+      stream: Provider.of<StockProvider>(context, listen: false).stocksStream,
+      builder: (context, snapshot) {
         try {
-          if (stockProvider.isLoading) {
+          // Handle stream loading state
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
+          }
+
+          // Handle stream error
+          if (snapshot.hasError) {
+            _logError(
+              'Stock stream error',
+              snapshot.error!,
+              StackTrace.current,
+            );
+            return Center(
+              child: Column(
+                children: [
+                  Text(
+                    'Error: ${snapshot.error}',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Stream will automatically reconnect
+                    },
+                    child: Text('Retry'),
+                  ),
+                ],
+              ),
+            );
           }
 
           // Calculate stats
@@ -242,12 +248,14 @@ class _StokState extends State<Stok> with SingleTickerProviderStateMixin {
           int outOfStockCount = 0;
 
           // We'll calculate these values based on actual stock data
-          for (var stock in stockProvider.stocks) {
-            totalProducts++;
-            if (stock.jumlahBarang <= 0) {
-              outOfStockCount++;
-            } else if (stock.jumlahBarang <= 5) {
-              lowStockCount++;
+          if (snapshot.hasData) {
+            for (var stock in snapshot.data!) {
+              totalProducts++;
+              if (stock.jumlahBarang <= 0) {
+                outOfStockCount++;
+              } else if (stock.jumlahBarang <= 5) {
+                lowStockCount++;
+              }
             }
           }
 
@@ -408,245 +416,313 @@ class _StokState extends State<Stok> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildProductStockList(BuildContext context) {
-    return Consumer2<ProductProvider, StockProvider>(
-      builder: (context, productProvider, stockProvider, child) {
-        try {
-          if (productProvider.isLoading || stockProvider.isLoading) {
-            return Center(child: CircularProgressIndicator());
-          }
-
-          if (productProvider.errorMessage != null ||
-              stockProvider.errorMessage != null) {
-            final errorMessage =
-                productProvider.errorMessage ??
-                stockProvider.errorMessage ??
-                'Error loading data';
-            _logError('Provider error', errorMessage, StackTrace.current);
-            return Center(
-              child: Column(
-                children: [
-                  Text(
-                    'Error: $errorMessage',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Retry loading data
-                      _loadData();
-                    },
-                    child: Text('Coba Lagi'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Filter products based on search query
-          List<ProductModel> filteredProducts = productProvider.products;
-          if (_searchQuery.isNotEmpty) {
-            filteredProducts = filteredProducts.where((product) {
-              return product.name.toLowerCase().contains(_searchQuery);
-            }).toList();
-          }
-
-          // Group products with their stock information
-          List<Map<String, dynamic>> productStockData = [];
-
-          for (var product in filteredProducts) {
+    // Use StreamBuilder for real-time product updates
+    return StreamBuilder<List<ProductModel>>(
+      stream: Provider.of<ProductProvider>(
+        context,
+        listen: false,
+      ).productsStream,
+      builder: (context, productSnapshot) {
+        // Use StreamBuilder for real-time stock updates
+        return StreamBuilder<List<StokModel>>(
+          stream: Provider.of<StockProvider>(
+            context,
+            listen: false,
+          ).stocksStream,
+          builder: (context, stockSnapshot) {
             try {
-              // Find corresponding stock record from real-time data
-              StokModel? stock = product.id != null
-                  ? stockProvider.getCurrentStockByProductId(product.id!) ??
-                        StokModel(produkId: product.id!, jumlahBarang: 0)
-                  : StokModel(produkId: 0, jumlahBarang: 0);
+              // Handle product stream loading state
+              if (productSnapshot.connectionState == ConnectionState.waiting ||
+                  stockSnapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
 
-              final stockInfo = _getStockStatus(stock.jumlahBarang);
-
-              productStockData.add({
-                'product': product,
-                'stock': stock,
-                'status': stockInfo['status'],
-                'statusColor': stockInfo['color'],
-                'stockCardColor': stockInfo['bgColor'],
-                'stockCount': stock.jumlahBarang.toString(),
-              });
-            } catch (e, stackTrace) {
-              _logError(
-                'Error processing product: ${product.name}',
-                e,
-                stackTrace,
-              );
-              // Continue with other products
-            }
-          }
-
-          if (productStockData.isEmpty) {
-            return Center(child: Text('Tidak ada produk'));
-          }
-
-          // Build rows of product cards (2 per row)
-          List<Widget> rows = [];
-          for (int i = 0; i < productStockData.length; i += 2) {
-            try {
-              List<Widget> cards = [];
-
-              // Add first card
-              cards.add(
-                Expanded(
-                  child: CardProdukStok(
-                    productName: productStockData[i]['product'].name,
-                    status: productStockData[i]['status'],
-                    stockCount: productStockData[i]['stockCount'],
-                    image:
-                        productStockData[i]['product'].imageUrl ??
-                        'assets/fish.png',
-                    statusColor: productStockData[i]['statusColor'],
-                    stockCardColor: productStockData[i]['stockCardColor'],
-                    onEdit: () {
-                      try {
-                        Navigator.pushNamed(
-                          context,
-                          '/EditStok',
-                          arguments: productStockData[i],
-                        );
-                      } catch (e, stackTrace) {
-                        _logError(
-                          'Error navigating to EditStok for product: ${productStockData[i]["product"].name}',
-                          e,
-                          stackTrace,
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Gagal membuka halaman edit stok'),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ),
-              );
-
-              // Add second card if exists
-              if (i + 1 < productStockData.length) {
-                cards.add(
-                  Expanded(
-                    child: CardProdukStok(
-                      productName: productStockData[i + 1]['product'].name,
-                      status: productStockData[i + 1]['status'],
-                      stockCount: productStockData[i + 1]['stockCount'],
-                      image:
-                          productStockData[i + 1]['product'].imageUrl ??
-                          'assets/fish.png',
-                      statusColor: productStockData[i + 1]['statusColor'],
-                      stockCardColor: productStockData[i + 1]['stockCardColor'],
-                      onEdit: () {
-                        try {
-                          Navigator.pushNamed(
-                            context,
-                            '/EditStok',
-                            arguments: productStockData[i + 1],
-                          );
-                        } catch (e, stackTrace) {
-                          _logError(
-                            'Error navigating to EditStok for product: ${productStockData[i + 1]["product"].name}',
-                            e,
-                            stackTrace,
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Gagal membuka halaman edit stok'),
-                            ),
-                          );
-                        }
-                      },
-                    ),
+              // Handle product stream error
+              if (productSnapshot.hasError) {
+                _logError(
+                  'Product stream error',
+                  productSnapshot.error!,
+                  StackTrace.current,
+                );
+                return Center(
+                  child: Column(
+                    children: [
+                      Text(
+                        'Error: ${productSnapshot.error}',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      SizedBox(height: 10),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Stream will automatically reconnect
+                        },
+                        child: Text('Retry'),
+                      ),
+                    ],
                   ),
                 );
               }
 
-              rows.add(Row(children: cards));
+              // Handle stock stream error
+              if (stockSnapshot.hasError) {
+                _logError(
+                  'Stock stream error',
+                  stockSnapshot.error!,
+                  StackTrace.current,
+                );
+                return Center(
+                  child: Column(
+                    children: [
+                      Text(
+                        'Error: ${stockSnapshot.error}',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      SizedBox(height: 10),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Stream will automatically reconnect
+                        },
+                        child: Text('Retry'),
+                      ),
+                    ],
+                  ),
+                );
+              }
 
-              rows.add(SizedBox(height: 8));
+              // Check if we have product data
+              if (!productSnapshot.hasData || productSnapshot.data!.isEmpty) {
+                return Center(child: Text('Tidak ada produk'));
+              }
+
+              // Filter products based on search query
+              List<ProductModel> filteredProducts = productSnapshot.data!;
+              if (_searchQuery.isNotEmpty) {
+                filteredProducts = filteredProducts.where((product) {
+                  return product.name.toLowerCase().contains(_searchQuery);
+                }).toList();
+              }
+
+              // Convert stock data to map for easier access
+              Map<int, StokModel> stockMap = {};
+              if (stockSnapshot.hasData) {
+                for (var stock in stockSnapshot.data!) {
+                  if (stock.produkId != null) {
+                    stockMap[stock.produkId!] = stock;
+                  }
+                }
+              }
+
+              // Group products with their stock information
+              List<Map<String, dynamic>> productStockData = [];
+
+              for (var product in filteredProducts) {
+                try {
+                  // Find corresponding stock record from real-time data
+                  StokModel? stock = product.id != null
+                      ? stockMap[product.id!] ??
+                            StokModel(produkId: product.id!, jumlahBarang: 0)
+                      : StokModel(produkId: 0, jumlahBarang: 0);
+
+                  final stockInfo = _getStockStatus(stock.jumlahBarang);
+
+                  productStockData.add({
+                    'product': product,
+                    'stock': stock,
+                    'status': stockInfo['status'],
+                    'statusColor': stockInfo['color'],
+                    'stockCardColor': stockInfo['bgColor'],
+                    'stockCount': stock.jumlahBarang.toString(),
+                  });
+                } catch (e, stackTrace) {
+                  _logError(
+                    'Error processing product: ${product.name}',
+                    e,
+                    stackTrace,
+                  );
+                  // Continue with other products
+                }
+              }
+
+              if (productStockData.isEmpty) {
+                return Center(child: Text('Tidak ada produk'));
+              }
+
+              // Build rows of product cards (2 per row)
+              List<Widget> rows = [];
+              for (int i = 0; i < productStockData.length; i += 2) {
+                try {
+                  List<Widget> cards = [];
+
+                  // Add first card
+                  cards.add(
+                    Expanded(
+                      child: CardProdukStok(
+                        productName: productStockData[i]['product'].name,
+                        status: productStockData[i]['status'],
+                        stockCount: productStockData[i]['stockCount'],
+                        image:
+                            productStockData[i]['product'].imageUrl ??
+                            'assets/fish.png',
+                        statusColor: productStockData[i]['statusColor'],
+                        stockCardColor: productStockData[i]['stockCardColor'],
+                        onEdit: () {
+                          try {
+                            Navigator.pushNamed(
+                              context,
+                              '/EditStok',
+                              arguments: productStockData[i],
+                            );
+                          } catch (e, stackTrace) {
+                            _logError(
+                              'Error navigating to EditStok for product: ${productStockData[i]["product"].name}',
+                              e,
+                              stackTrace,
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Gagal membuka halaman edit stok',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                  );
+
+                  // Add second card if exists
+                  if (i + 1 < productStockData.length) {
+                    cards.add(
+                      Expanded(
+                        child: CardProdukStok(
+                          productName: productStockData[i + 1]['product'].name,
+                          status: productStockData[i + 1]['status'],
+                          stockCount: productStockData[i + 1]['stockCount'],
+                          image:
+                              productStockData[i + 1]['product'].imageUrl ??
+                              'assets/fish.png',
+                          statusColor: productStockData[i + 1]['statusColor'],
+                          stockCardColor:
+                              productStockData[i + 1]['stockCardColor'],
+                          onEdit: () {
+                            try {
+                              Navigator.pushNamed(
+                                context,
+                                '/EditStok',
+                                arguments: productStockData[i + 1],
+                              );
+                            } catch (e, stackTrace) {
+                              _logError(
+                                'Error navigating to EditStok for product: ${productStockData[i + 1]["product"].name}',
+                                e,
+                                stackTrace,
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Gagal membuka halaman edit stok',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    );
+                  }
+
+                  rows.add(Row(children: cards));
+
+                  rows.add(SizedBox(height: 8));
+                } catch (e, stackTrace) {
+                  _logError(
+                    'Error building product row at index: $i',
+                    e,
+                    stackTrace,
+                  );
+                  // Continue with other rows
+                }
+              }
+
+              return Column(children: rows);
             } catch (e, stackTrace) {
-              _logError(
-                'Error building product row at index: $i',
-                e,
-                stackTrace,
+              _logError('Error building product stock list', e, stackTrace);
+              return Center(
+                child: Column(
+                  children: [
+                    Text(
+                      'Error memuat daftar produk: ${e.toString()}',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                    SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Retry loading data
+                        _loadData();
+                      },
+                      child: Text('Coba Lagi'),
+                    ),
+                  ],
+                ),
               );
-              // Continue with other rows
             }
-          }
-
-          return Column(children: rows);
-        } catch (e, stackTrace) {
-          _logError('Error building product stock list', e, stackTrace);
-          return Center(
-            child: Column(
-              children: [
-                Text(
-                  'Error memuat daftar produk: ${e.toString()}',
-                  style: TextStyle(color: Colors.red),
-                ),
-                SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: () {
-                    // Retry loading data
-                    _loadData();
-                  },
-                  child: Text('Coba Lagi'),
-                ),
-              ],
-            ),
-          );
-        }
+          },
+        );
       },
     );
   }
 
   Widget _buildStockMutationHistory(BuildContext context) {
-    return Consumer<StockProvider>(
-      builder: (context, stockProvider, child) {
+    // Use StreamBuilder for real-time stock mutation updates
+    return StreamBuilder<List<StokMutasiModel>>(
+      stream: Provider.of<StockProvider>(
+        context,
+        listen: false,
+      ).stockMutationsStream,
+      builder: (context, snapshot) {
         try {
-          if (stockProvider.isLoading) {
+          // Handle stream loading state
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           }
 
-          if (stockProvider.errorMessage != null) {
+          // Handle stream error
+          if (snapshot.hasError) {
             _logError(
-              'Stock mutation error',
-              stockProvider.errorMessage!,
+              'Stock mutation stream error',
+              snapshot.error!,
               StackTrace.current,
             );
             return Center(
               child: Column(
                 children: [
                   Text(
-                    'Error: ${stockProvider.errorMessage!}',
+                    'Error: ${snapshot.error}',
                     style: TextStyle(color: Colors.red),
                   ),
                   SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: () {
-                      // Retry loading data
-                      _loadData();
+                      // Stream will automatically reconnect
                     },
-                    child: Text('Coba Lagi'),
+                    child: Text('Retry'),
                   ),
                 ],
               ),
             );
           }
 
-          List<StokMutasiModel> mutations = stockProvider.stockMutations;
+          // Check if we have mutation data
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(child: Text('Tidak ada riwayat perubahan stok'));
+          }
+
+          List<StokMutasiModel> mutations = snapshot.data!;
 
           // Limit to 10 most recent mutations
           if (mutations.length > 10) {
             mutations = mutations.take(10).toList();
-          }
-
-          if (mutations.isEmpty) {
-            return Center(child: Text('Tidak ada riwayat perubahan stok'));
           }
 
           return Container(
