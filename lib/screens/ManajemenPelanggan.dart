@@ -19,6 +19,10 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
 
+  // Form keys for validation
+  final _addFormKey = GlobalKey<FormState>();
+  final _editFormKey = GlobalKey<FormState>();
+
   // Variable to hold the customer being edited
   PelangganModel? _editingCustomer;
 
@@ -83,6 +87,11 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
 
   // Add a new customer
   void _addCustomer() async {
+    // Validate form
+    if (!_addFormKey.currentState!.validate()) {
+      return;
+    }
+
     final customerProvider = Provider.of<CustomerProvider>(
       context,
       listen: false,
@@ -90,11 +99,13 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
 
     try {
       final newCustomer = PelangganModel(
-        namaPelanggan: _nameController.text,
+        namaPelanggan: _nameController.text.trim(),
         alamat: _addressController.text.isNotEmpty
-            ? _addressController.text
+            ? _addressController.text.trim()
             : null,
-        noTelp: _phoneController.text.isNotEmpty ? _phoneController.text : null,
+        noTelp: _phoneController.text.isNotEmpty
+            ? _phoneController.text.trim()
+            : null,
         totalPembelian: 0, // Default value
       );
 
@@ -122,6 +133,11 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
 
   // Update an existing customer
   void _updateCustomer(PelangganModel customer) async {
+    // Validate form
+    if (!_editFormKey.currentState!.validate()) {
+      return;
+    }
+
     final customerProvider = Provider.of<CustomerProvider>(
       context,
       listen: false,
@@ -130,12 +146,12 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
     try {
       final updatedCustomer = PelangganModel(
         pelangganId: customer.pelangganId,
-        namaPelanggan: _nameController.text,
+        namaPelanggan: _nameController.text.trim(),
         alamat: _addressController.text.isNotEmpty
-            ? _addressController.text
+            ? _addressController.text.trim()
             : customer.alamat,
         noTelp: _phoneController.text.isNotEmpty
-            ? _phoneController.text
+            ? _phoneController.text.trim()
             : customer.noTelp,
         totalPembelian: customer.totalPembelian,
       );
@@ -222,23 +238,61 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
           ),
           content: Container(
             width: MediaQuery.of(context).size.width * 0.8,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildTextField(
-                  _nameController,
-                  'Nama Pelanggan',
-                  Icons.person,
-                ),
-                SizedBox(height: 10),
-                _buildTextField(_phoneController, 'Nomor Telepon', Icons.phone),
-                SizedBox(height: 10),
-                _buildTextField(
-                  _addressController,
-                  'Alamat',
-                  Icons.location_on,
-                ),
-              ],
+            child: Form(
+              key: _addFormKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildTextField(
+                    _nameController,
+                    'Nama Pelanggan',
+                    Icons.person,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Nama pelanggan tidak boleh kosong';
+                      }
+                      if (value.trim().length < 2) {
+                        return 'Nama pelanggan minimal 2 karakter';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 10),
+                  _buildTextField(
+                    _phoneController,
+                    'Nomor Telepon',
+                    Icons.phone,
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        // Check if it contains only numbers, spaces, dashes, or plus sign
+                        final phoneRegex = RegExp(r'^[\+]?[0-9\s\-]+$');
+                        if (!phoneRegex.hasMatch(value)) {
+                          return 'Masukkan nomor telepon yang valid';
+                        }
+                        if (value.trim().length < 5) {
+                          return 'Nomor telepon minimal 5 digit';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 10),
+                  _buildTextField(
+                    _addressController,
+                    'Alamat',
+                    Icons.location_on,
+                    validator: (value) {
+                      if (value != null &&
+                          value.isNotEmpty &&
+                          value.trim().length < 5) {
+                        return 'Alamat minimal 5 karakter';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -247,7 +301,9 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
               child: ElevatedButton(
                 onPressed: () {
                   _addCustomer();
-                  Navigator.of(context).pop();
+                  if (_addFormKey.currentState!.validate()) {
+                    Navigator.of(context).pop();
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   shadowColor: Colors.transparent,
@@ -309,23 +365,61 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
           ),
           content: Container(
             width: MediaQuery.of(context).size.width * 0.8,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildTextField(
-                  _nameController,
-                  'Nama Pelanggan',
-                  Icons.person,
-                ),
-                SizedBox(height: 10),
-                _buildTextField(_phoneController, 'Nomor Telepon', Icons.phone),
-                SizedBox(height: 10),
-                _buildTextField(
-                  _addressController,
-                  'Alamat',
-                  Icons.location_on,
-                ),
-              ],
+            child: Form(
+              key: _editFormKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildTextField(
+                    _nameController,
+                    'Nama Pelanggan',
+                    Icons.person,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Nama pelanggan tidak boleh kosong';
+                      }
+                      if (value.trim().length < 2) {
+                        return 'Nama pelanggan minimal 2 karakter';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 10),
+                  _buildTextField(
+                    _phoneController,
+                    'Nomor Telepon',
+                    Icons.phone,
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        // Check if it contains only numbers, spaces, dashes, or plus sign
+                        final phoneRegex = RegExp(r'^[\+]?[0-9\s\-]+$');
+                        if (!phoneRegex.hasMatch(value)) {
+                          return 'Masukkan nomor telepon yang valid';
+                        }
+                        if (value.trim().length < 5) {
+                          return 'Nomor telepon minimal 5 digit';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 10),
+                  _buildTextField(
+                    _addressController,
+                    'Alamat',
+                    Icons.location_on,
+                    validator: (value) {
+                      if (value != null &&
+                          value.isNotEmpty &&
+                          value.trim().length < 5) {
+                        return 'Alamat minimal 5 karakter';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -365,7 +459,9 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
                   ElevatedButton(
                     onPressed: () {
                       _updateCustomer(customer);
-                      Navigator.of(context).pop();
+                      if (_editFormKey.currentState!.validate()) {
+                        Navigator.of(context).pop();
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       shadowColor: Colors.transparent,
@@ -397,175 +493,73 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
     );
   }
 
-  void _showCustomerHistoryDialog() {
+  void _showCustomerHistoryDialog(PelangganModel customer) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Warna().Putih,
-          elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          backgroundColor: Warna().Putih,
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Riwayat Pelanggan',
                 style: TextStyle(
+                  fontFamily: "CircularStd",
+                  fontWeight: FontWeight.w600,
                   fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'CircularStd',
+                  color: Warna().Hitam,
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.close, color: Warna().Hitam, size: 20),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
+                icon: Icon(Icons.close, color: Warna().Hitam),
               ),
             ],
           ),
           content: Container(
             width: MediaQuery.of(context).size.width * 0.8,
-            height: MediaQuery.of(context).size.height * 0.4,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      //Card riwayat pelanggan
-                      child: Card(
-                        color: Warna().bgUtama,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Stack(
-                            alignment: Alignment.topRight,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'TRX-20112025-001',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'Inter',
-                                    ),
-                                  ),
-                                  SizedBox(height: 2),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        '2025-11-20, 13:00',
-                                        style: TextStyle(
-                                          fontSize: 8,
-                                          color: Colors.grey,
-                                          fontWeight: FontWeight.w500,
-                                          fontFamily: 'Inter',
-                                        ),
-                                      ),
-                                      Card(),
-                                    ],
-                                  ),
-                                  SizedBox(height: 10),
-                                ],
-                              ),
-                              // Text in top-right corner
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: Text(
-                                  RupiahFormatter.format(200000),
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontFamily: 'Inter',
-                                    fontWeight: FontWeight.bold,
-                                    color: Warna().Ijo,
-                                  ),
-                                ),
-                              ),
-                              // Card in bottom-right corner
-                              SizedBox(height: 2),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Card(
-                                  elevation: 0,
-                                  color: Warna().bgIjo,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(200),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 5,
-                                    ),
-                                    child: Text(
-                                      'Tunai',
-                                      style: TextStyle(
-                                        fontFamily: 'CircularStd',
-                                        fontSize: 9,
-                                        color: Warna().Ijo,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                
+                SizedBox(height: 16),
+                // History section
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Warna().Abu),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(Icons.history, size: 40, color: Colors.grey[400]),
+                      SizedBox(height: 12),
+                      Text(
+                        'Belum ada riwayat transaksi',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[600],
                         ),
                       ),
-                    ),
-                  ],
+                      SizedBox(height: 8),
+                      Text(
+                        'Riwayat transaksi pelanggan akan muncul di sini',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
         );
       },
-    );
-  }
-
-  Widget _buildTextField(
-    TextEditingController controller,
-    String label,
-    IconData icon,
-  ) {
-    return TextField(
-      cursorColor: Warna().Hitam,
-      style: TextStyle(
-        color: Colors.black,
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        fontFamily: 'CircularStd',
-      ),
-      controller: controller,
-      decoration: InputDecoration(
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Warna().Hitam),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        filled: true,
-        fillColor: Warna().bgUtama,
-        labelText: label,
-        labelStyle: TextStyle(
-          color: Warna().Hitam,
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          fontFamily: 'CircularStd',
-        ),
-        prefixIcon: Icon(icon, size: 18),
-        border: OutlineInputBorder(
-          borderSide: BorderSide.none,
-          borderRadius: BorderRadius.circular(6),
-        ),
-      ),
     );
   }
 
@@ -663,6 +657,47 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
     );
   }
 
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    String? Function(String?)? validator,
+    TextInputType? keyboardType,
+  }) {
+    return TextFormField(
+      cursorColor: Warna().Hitam,
+      style: TextStyle(
+        color: Colors.black,
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        fontFamily: 'CircularStd',
+      ),
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      decoration: InputDecoration(
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Warna().Hitam),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        filled: true,
+        fillColor: Warna().bgUtama,
+        labelText: label,
+        labelStyle: TextStyle(
+          color: Warna().Hitam,
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          fontFamily: 'CircularStd',
+        ),
+        prefixIcon: Icon(icon, size: 18),
+        border: OutlineInputBorder(
+          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(6),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -755,7 +790,7 @@ class _ManajemenPelangganState extends State<ManajemenPelanggan> {
                           color: Warna().Putih,
                           child: GestureDetector(
                             onTap: () {
-                              _showCustomerHistoryDialog();
+                              _showCustomerHistoryDialog(customer);
                             },
                             child: Padding(
                               padding: const EdgeInsets.all(14),
