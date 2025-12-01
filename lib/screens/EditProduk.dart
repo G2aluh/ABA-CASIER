@@ -118,6 +118,32 @@ class _EditProdukState extends State<EditProduk> {
       return;
     }
 
+    // Parse numeric value from raw input or formatted text
+    int? numericPrice;
+    if (_rawPriceValue.isNotEmpty) {
+      numericPrice = int.tryParse(_rawPriceValue);
+    }
+
+    // If we couldn't parse from raw value, try to extract numbers from the displayed text
+    if (numericPrice == null) {
+      // Extract all digits from the formatted text
+      final numericString = _priceController.text.replaceAll(
+        RegExp(r'[^0-9]'),
+        '',
+      );
+      if (numericString.isNotEmpty) {
+        numericPrice = int.tryParse(numericString);
+      }
+    }
+
+    // If we still don't have a valid number, show error
+    if (numericPrice == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Harga produk harus berupa angka')),
+      );
+      return;
+    }
+
     if (_selectedCategory == null) {
       ScaffoldMessenger.of(
         context,
@@ -155,7 +181,7 @@ class _EditProdukState extends State<EditProduk> {
       // Create updated product model
       final updatedProduct = widget.product.copyWith(
         name: _productNameController.text,
-        price: int.tryParse(_rawPriceValue) ?? 0,
+        price: numericPrice!,
         imageUrl: imageUrl,
         category: category,
       );
@@ -381,11 +407,7 @@ class _EditProdukState extends State<EditProduk> {
                                     Expanded(
                                       child: TextFormField(
                                         controller: _priceController,
-                                        keyboardType: TextInputType.number,
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter
-                                              .digitsOnly,
-                                        ],
+                                        keyboardType: TextInputType.text,
                                         cursorColor: Warna().Ijo,
                                         style: TextStyle(
                                           color: Colors.black,
@@ -407,26 +429,30 @@ class _EditProdukState extends State<EditProduk> {
                                           // Store raw value for submission
                                           _rawPriceValue = value;
 
-                                          // Format the value as Rupiah while typing
+                                          // Try to format the value as Rupiah while typing
                                           if (value.isNotEmpty) {
-                                            final numericValue =
-                                                int.tryParse(value) ?? 0;
-                                            final formattedValue =
-                                                RupiahFormatter.format(
-                                                  numericValue,
-                                                );
-
-                                            // Update the text field with formatted value
-                                            // But keep cursor position at the end
-                                            _priceController
-                                                .value = TextEditingValue(
-                                              text: formattedValue,
-                                              selection:
-                                                  TextSelection.collapsed(
-                                                    offset:
-                                                        formattedValue.length,
-                                                  ),
+                                            final numericValue = int.tryParse(
+                                              value,
                                             );
+                                            if (numericValue != null) {
+                                              final formattedValue =
+                                                  RupiahFormatter.format(
+                                                    numericValue,
+                                                  );
+
+                                              // Update the text field with formatted value
+                                              // But keep cursor position at the end
+                                              _priceController
+                                                  .value = TextEditingValue(
+                                                text: formattedValue,
+                                                selection:
+                                                    TextSelection.collapsed(
+                                                      offset:
+                                                          formattedValue.length,
+                                                    ),
+                                              );
+                                            }
+                                            // If numericValue is null, we keep the raw input as is
                                           }
                                         },
                                       ),
