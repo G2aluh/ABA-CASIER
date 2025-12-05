@@ -38,11 +38,11 @@ class _LoginState extends State<Login> {
                 Center(
                   child: Column(
                     children: [
-                      Image.asset('img/logoAba.png', width: 130, height: 130),
+                      Image.asset('img/LogoAba.png', width: 130, height: 130),
                       Padding(
                         padding: const EdgeInsets.only(top: 40),
                         child: Text(
-                          'MASUK',
+                          'Masuk',
                           style: TextStyle(
                             color: Warna().Putih,
                             fontSize: 16,
@@ -59,7 +59,7 @@ class _LoginState extends State<Login> {
                 Padding(
                   padding: const EdgeInsets.only(top: 45),
                   child: Text(
-                    'Emailmu',
+                    'Email',
                     style: TextStyle(
                       color: Warna().Putih,
                       fontSize: 14,
