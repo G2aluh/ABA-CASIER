@@ -260,7 +260,7 @@ class _ProdukState extends State<Produk> {
                               ),
                               SizedBox(width: 4),
                               Text(
-                                'Produk Terhapus',
+                                '   l',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Warna().Putih,

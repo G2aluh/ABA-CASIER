@@ -30,7 +30,6 @@ class _SoftDeletedProductsState extends State<SoftDeletedProducts> {
         ),
         backgroundColor: Warna().Putih,
         elevation: 0,
-        centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Warna().Hitam),
           onPressed: () {
@@ -89,12 +88,12 @@ class _SoftDeletedProductsState extends State<SoftDeletedProducts> {
                           Icon(
                             Icons.inventory_2_outlined,
                             size: 64,
-                            color: Warna().Abu,
+                            color: Warna().Hitam,
                           ),
                           SizedBox(height: 16),
                           Text(
                             'Tidak ada produk yang terhapus',
-                            style: TextStyle(fontSize: 16, color: Warna().Abu),
+                            style: TextStyle(fontSize: 16, color: Warna().Hitam),
                           ),
                         ],
                       ),
